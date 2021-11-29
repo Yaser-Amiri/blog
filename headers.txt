@@ -1,9 +1,0 @@
-/theme/*
-  Access-Control-Allow-Origin: *
-  Cache-Control : public, max-age=3600;
-  X-Robots-Tag: nosnippet, noindex
-
-/images/*
-  Access-Control-Allow-Origin: *
-  Cache-Control : public, max-age=3600;
-  X-Robots-Tag: nosnippet

@@ -45,5 +45,6 @@ CC_LICENSE = {
 }
 COPYRIGHT_YEAR = 2021
 BROWSER_COLOR = "#333"
-CUSTOM_CSS = "./styles/custom.css"
+CUSTOM_CSS = "styles/custom.css"
 MAIN_MENU = False
+STATIC_PATHS = ['images', 'styles']

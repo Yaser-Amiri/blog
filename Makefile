@@ -67,7 +67,5 @@ devserver-global:
 
 publish:
 	"$(PELICAN)" "$(INPUTDIR)" -o "$(OUTPUTDIR)" -s "$(PUBLISHCONF)" $(PELICANOPTS)
-	cp headers.txt output/_headers
-
 
 .PHONY: html help clean regenerate serve serve-global devserver publish 
