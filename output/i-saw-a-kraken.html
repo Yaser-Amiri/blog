@@ -1,0 +1,275 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="" />
+
+  <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro|Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+
+    <link rel="stylesheet" type="text/css" href="./theme/stylesheet/style.min.css">
+
+  <link rel="stylesheet" type="text/css" href="./theme/pygments/github.min.css">
+  <link rel="stylesheet" type="text/css" href="./theme/font-awesome/css/font-awesome.min.css">
+
+    <link href="./styles/custom.css" rel="stylesheet">
+
+
+
+    <link rel="shortcut icon" href="/images/profile.png" type="image/x-icon">
+    <link rel="icon" href="/images/profile.png" type="image/x-icon">
+
+
+    <!-- Chrome, Firefox OS and Opera -->
+    <meta name="theme-color" content="#333">
+    <!-- Windows Phone -->
+    <meta name="msapplication-navbutton-color" content="#333">
+    <!-- iOS Safari -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- Microsoft EDGE -->
+    <meta name="msapplication-TileColor" content="#333">
+
+<meta name="author" content="Yaser Amiri" />
+<meta name="description" content="PostgreSQL has been one of the first DBMSs I&#39;ve used, and it has been a reliable choice for me over the past 7 years. For me, it always has been the statue of &#34;Reliability&#34;. I have never personally encountered any bugs in PostgreSQL, this fact made me think that maybe …" />
+<meta name="keywords" content="">
+
+<meta property="og:site_name" content="Yaser Amiri - Personal Blog"/>
+<meta property="og:title" content="I saw a kraken"/>
+<meta property="og:description" content="PostgreSQL has been one of the first DBMSs I&#39;ve used, and it has been a reliable choice for me over the past 7 years. For me, it always has been the statue of &#34;Reliability&#34;. I have never personally encountered any bugs in PostgreSQL, this fact made me think that maybe …"/>
+<meta property="og:locale" content="en_US"/>
+<meta property="og:url" content="./i-saw-a-kraken.html"/>
+<meta property="og:type" content="article"/>
+<meta property="article:published_time" content="2023-06-13 00:00:00+04:30"/>
+<meta property="article:modified_time" content=""/>
+<meta property="article:author" content="./author/yaser-amiri.html">
+<meta property="article:section" content="tech, database, postgresql"/>
+<meta property="og:image" content="/images/profile.png">
+
+  <title>Yaser Amiri - Personal Blog &ndash; I saw a kraken</title>
+
+</head>
+<body>
+  <aside>
+    <div>
+      <a href=".">
+        <img src="/images/profile.png" alt="Yaser Amiri" title="Yaser Amiri">
+      </a>
+      <h1><a href=".">Yaser Amiri</a></h1>
+
+<p>Software Engineer</p>
+      <nav>
+        <ul class="list">
+          <li><a href="./pages/about-me.html#about-me">About Me</a></li>
+
+        </ul>
+      </nav>
+
+      <ul class="social">
+        <li><a class="sc-github" href="https://github.com/Yaser-Amiri" target="_blank"><i class="fa fa-github"></i></a></li>
+        <li><a class="sc-linkedin" href="https://www.linkedin.com/in/yaser-amiri" target="_blank"><i class="fa fa-linkedin"></i></a></li>
+        <li><a class="sc-twitter" href="https://twitter.com/Yaser-Amiri" target="_blank"><i class="fa fa-twitter"></i></a></li>
+      </ul>
+    </div>
+
+
+  </aside>
+  <main>
+
+
+<article class="single">
+  <header>
+      
+    <h1 id="i-saw-a-kraken">I saw a kraken</h1>
+    <p>
+          Posted on Tue 13 June 2023 in <a href="./category/tech-database-postgresql.html">tech, database, postgresql</a>
+
+
+    </p>
+  </header>
+
+
+  <div>
+    <p>PostgreSQL has been one of the first DBMSs I've used, and it has been a reliable choice for me over the past 7 years.
+For me, it always has been the statue of "Reliability". I have never personally encountered any bugs in PostgreSQL, this fact
+made me think that maybe it's impossible! Maybe you have to be one of the best sailors in the world to be able to see such a rare monster!  </p>
+<p>In the spring of 2022, I found a scenario that was causing a bug in <a href="https://eveince.com">Eveince Platform</a> and no one in our team could find an explanation for it, I thought the Kraken has finally appeared, a bug in PostgreSQL(actually Postgres developer don't call it a bug) which
+I couldn't find anything about it anywhere and it was alive on the last version of Postgres.
+I started a thread in PostgreSQL's mailing list and talked to the good men of Postgres, they said it's not a bug however it should get documented.
+I think I haven't yet, so I decided to write the story, So here I am writing this blog post, hopefully it save a couple of days/hours for someone.</p>
+<p>Let's say you have a table called balance, it looks like this (I deleted the primary key, etc to make things more simple):  </p>
+<div class="highlight"><pre><span></span><code>CREATE TABLE public.balance (
+    id uuid NOT NULL,
+    version BIGINT DEFAULT &#39;0&#39;::BIGINT NOT NULL,
+    &quot;time&quot; TIMESTAMP WITHOUT TIME zone NOT NULL,
+    entity_type CHARACTER VARYING(256) NOT NULL,
+    entity_id CHARACTER VARYING(256) NOT NULL,
+    currency CHARACTER VARYING(64) NOT NULL,
+    volume NUMERIC NOT NULL
+);
+</code></pre></div>
+
+<p>There is also a partial multicolumn index:  </p>
+<div class="highlight"><pre><span></span><code><span class="nt">CREATE</span> <span class="nt">UNIQUE</span> <span class="nt">INDEX</span> <span class="nt">uq_balance_record</span> <span class="nt">ON</span> <span class="nt">public</span><span class="p">.</span><span class="nc">balance</span>
+<span class="nt">USING</span> <span class="nt">btree</span> <span class="o">(</span><span class="nt">entity_type</span><span class="o">,</span> <span class="nt">entity_id</span><span class="o">,</span> <span class="s2">&quot;time&quot;</span><span class="o">,</span> <span class="nt">currency</span><span class="o">)</span>
+<span class="nt">WHERE</span> <span class="o">(</span><span class="s2">&quot;time&quot;</span> <span class="o">&gt;</span> <span class="s1">&#39;2021-12-30 23:59:59&#39;</span><span class="p">::</span><span class="nd">TIMESTAMP</span> <span class="nt">WITHOUT</span> <span class="nt">TIME</span> <span class="nt">zone</span><span class="o">);</span>
+</code></pre></div>
+
+<p>It simply says all the records with the same [<code>entity_type</code>, <code>entity_id</code>, <code>time</code>, and <code>currency</code>] and
+their <code>time</code> is greater than <code>2021-12-30 23:59:59</code> must be unique and indexed.<br>
+Everything is going well up to this point.</p>
+<p>Now let's start writing to this table, a prepared statement would be in order:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">PREPARE</span> <span class="nt">my_insert</span> <span class="o">(</span><span class="nt">uuid</span><span class="o">,</span> <span class="nt">TIMESTAMP</span><span class="o">,</span> <span class="nt">VARCHAR</span><span class="o">,</span> <span class="nt">VARCHAR</span><span class="o">,</span> <span class="nt">VARCHAR</span><span class="o">,</span> <span class="nt">NUMERIC</span><span class="o">,</span> <span class="nt">BIGINT</span><span class="o">,</span> <span class="nt">TIMESTAMP</span><span class="o">)</span> <span class="nt">AS</span>
+
+<span class="nt">INSERT</span> <span class="nt">INTO</span> <span class="nt">balance</span>
+<span class="o">(</span><span class="nt">id</span><span class="o">,</span> <span class="nt">time</span><span class="o">,</span> <span class="nt">entity_type</span><span class="o">,</span> <span class="nt">entity_id</span><span class="o">,</span> <span class="nt">currency</span><span class="o">,</span> <span class="nt">volume</span><span class="o">,</span> <span class="nt">version</span><span class="o">)</span>
+<span class="nt">VALUES</span>
+<span class="o">($</span><span class="nt">1</span><span class="p">::</span><span class="nd">uuid</span><span class="o">,</span> <span class="o">$</span><span class="nt">2</span><span class="p">::</span><span class="nd">TIMESTAMP</span><span class="o">,</span> <span class="o">$</span><span class="nt">3</span><span class="p">::</span><span class="nd">VARCHAR</span><span class="o">,</span> <span class="o">$</span><span class="nt">4</span><span class="p">::</span><span class="nd">VARCHAR</span><span class="o">,</span> <span class="o">$</span><span class="nt">5</span><span class="p">::</span><span class="nd">VARCHAR</span><span class="o">,</span> <span class="o">$</span><span class="nt">6</span><span class="p">::</span><span class="nd">NUMERIC</span><span class="o">,</span> <span class="o">$</span><span class="nt">7</span><span class="p">::</span><span class="nd">BIGINT</span><span class="o">)</span>
+<span class="nt">ON</span> <span class="nt">CONFLICT</span> <span class="o">(</span><span class="nt">entity_type</span><span class="o">,</span> <span class="nt">entity_id</span><span class="o">,</span> <span class="nt">time</span><span class="o">,</span> <span class="nt">currency</span><span class="o">)</span>
+<span class="nt">WHERE</span> <span class="nt">TIME</span> <span class="o">&gt;</span> <span class="o">$</span><span class="nt">8</span><span class="p">::</span><span class="nd">TIMESTAMP</span>
+<span class="nt">DO</span> <span class="nt">UPDATE</span> <span class="nt">SET</span> <span class="nt">volume</span> <span class="o">=</span> <span class="nt">excluded</span><span class="p">.</span><span class="nc">volume</span><span class="o">,</span> <span class="nt">version</span> <span class="o">=</span> <span class="nt">excluded</span><span class="p">.</span><span class="nc">version</span>
+<span class="nt">WHERE</span> <span class="nt">balance</span><span class="p">.</span><span class="nc">version</span> <span class="o">&lt;</span> <span class="nt">excluded</span><span class="p">.</span><span class="nc">version</span><span class="o">;</span>
+</code></pre></div>
+
+<p>It's an almost simple insert, it basically says if there is a record with the same [<code>entity_type</code>, <code>entity_id</code>, <code>time</code>, and <code>currency</code>]
+and its <code>version</code> is lower than what I want to insert, it should be updated otherwise it's gonna be inserted regularly. We have to put a where clause
+after <code>ON CONFLICT</code> to satisfy the index's predicate (which was about <em>the time being at least 2022</em>) otherwise Postgres would raise an error to
+express that it can't find an index for <code>ON CONFLICT</code>. The value of this predicate is not strict, it only has to make the predicate "true",
+2023, 2033, 2025, all of them are OK (because they're greater than <code>2021-12-30 23:59:59</code>)</p>
+<p>Now let's use this prepared statement and insert 5 records with the same values, after this transaction, we would have 1 record in the database.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">BEGIN</span><span class="o">;</span>
+<span class="nt">DELETE</span> <span class="nt">FROM</span> <span class="nt">balance</span><span class="o">;</span>
+<span class="nt">EXECUTE</span> <span class="nt">my_insert</span><span class="o">(</span><span class="s1">&#39;e063a2aa-53c3-4546-8f90-3955d4b4c23d&#39;</span><span class="o">,</span> <span class="s1">&#39;2023-01-05T08:00:00&#39;</span><span class="o">,</span> <span class="s1">&#39;A&#39;</span><span class="o">,</span> <span class="s1">&#39;B&#39;</span><span class="o">,</span> <span class="s1">&#39;C&#39;</span><span class="o">,</span> <span class="nt">1</span><span class="o">,</span> <span class="nt">2</span><span class="o">,</span> <span class="s1">&#39;2025-01-01&#39;</span><span class="o">);</span>
+<span class="nt">EXECUTE</span> <span class="nt">my_insert</span><span class="o">(</span><span class="s1">&#39;4f5bb87d-be77-421b-ad86-1cee28187cf6&#39;</span><span class="o">,</span> <span class="s1">&#39;2023-01-05T08:00:00&#39;</span><span class="o">,</span> <span class="s1">&#39;A&#39;</span><span class="o">,</span> <span class="s1">&#39;B&#39;</span><span class="o">,</span> <span class="s1">&#39;C&#39;</span><span class="o">,</span> <span class="nt">1</span><span class="o">,</span> <span class="nt">2</span><span class="o">,</span> <span class="s1">&#39;2025-01-01&#39;</span><span class="o">);</span>
+<span class="nt">EXECUTE</span> <span class="nt">my_insert</span><span class="o">(</span><span class="s1">&#39;17a5a62e-0736-4eba-8ed7-e76cbd99080a&#39;</span><span class="o">,</span> <span class="s1">&#39;2023-01-05T08:00:00&#39;</span><span class="o">,</span> <span class="s1">&#39;A&#39;</span><span class="o">,</span> <span class="s1">&#39;B&#39;</span><span class="o">,</span> <span class="s1">&#39;C&#39;</span><span class="o">,</span> <span class="nt">1</span><span class="o">,</span> <span class="nt">2</span><span class="o">,</span> <span class="s1">&#39;2025-01-01&#39;</span><span class="o">);</span>
+<span class="nt">EXECUTE</span> <span class="nt">my_insert</span><span class="o">(</span><span class="s1">&#39;3782cea4-d449-48fd-a56f-cd43c4577230&#39;</span><span class="o">,</span> <span class="s1">&#39;2023-01-05T08:00:00&#39;</span><span class="o">,</span> <span class="s1">&#39;A&#39;</span><span class="o">,</span> <span class="s1">&#39;B&#39;</span><span class="o">,</span> <span class="s1">&#39;C&#39;</span><span class="o">,</span> <span class="nt">1</span><span class="o">,</span> <span class="nt">2</span><span class="o">,</span> <span class="s1">&#39;2025-01-01&#39;</span><span class="o">);</span>
+<span class="nt">EXECUTE</span> <span class="nt">my_insert</span><span class="o">(</span><span class="s1">&#39;949d18e2-6fca-427a-9aac-a6803ef94b4f&#39;</span><span class="o">,</span> <span class="s1">&#39;2023-01-05T08:00:00&#39;</span><span class="o">,</span> <span class="s1">&#39;A&#39;</span><span class="o">,</span> <span class="s1">&#39;B&#39;</span><span class="o">,</span> <span class="s1">&#39;C&#39;</span><span class="o">,</span> <span class="nt">1</span><span class="o">,</span> <span class="nt">2</span><span class="o">,</span> <span class="s1">&#39;2025-01-01&#39;</span><span class="o">);</span>
+<span class="nt">COMMIT</span><span class="o">;</span>
+
+<span class="o">;</span> <span class="nt">Result</span><span class="o">:</span>
+<span class="nt">BEGIN</span>
+<span class="nt">DELETE</span> <span class="nt">1</span>
+<span class="nt">INSERT</span> <span class="nt">0</span> <span class="nt">1</span>
+<span class="nt">INSERT</span> <span class="nt">0</span> <span class="nt">0</span>
+<span class="nt">INSERT</span> <span class="nt">0</span> <span class="nt">0</span>
+<span class="nt">INSERT</span> <span class="nt">0</span> <span class="nt">0</span>
+<span class="nt">INSERT</span> <span class="nt">0</span> <span class="nt">0</span>
+<span class="nt">COMMIT</span>
+</code></pre></div>
+
+<p>It worked. No surprise. BUT if you do the same with one more record (make it 6 records) it'll fail!
+<code>DEALLOCATE</code> and create the prepared statement again and insert this data:</p>
+<div class="highlight"><pre><span></span><code><span class="n">BEGIN</span><span class="p">;</span>
+<span class="n">DELETE</span> <span class="n">FROM</span> <span class="n">balance</span><span class="p">;</span>
+<span class="n">EXECUTE</span> <span class="n">my_insert</span><span class="p">(</span><span class="s1">&#39;e063a2aa-53c3-4546-8f90-3955d4b4c23d&#39;</span><span class="p">,</span> <span class="s1">&#39;2023-01-05T08:00:00&#39;</span><span class="p">,</span> <span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;2025-01-01&#39;</span><span class="p">);</span>
+<span class="n">EXECUTE</span> <span class="n">my_insert</span><span class="p">(</span><span class="s1">&#39;4f5bb87d-be77-421b-ad86-1cee28187cf6&#39;</span><span class="p">,</span> <span class="s1">&#39;2023-01-05T08:00:00&#39;</span><span class="p">,</span> <span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;2025-01-01&#39;</span><span class="p">);</span>
+<span class="n">EXECUTE</span> <span class="n">my_insert</span><span class="p">(</span><span class="s1">&#39;17a5a62e-0736-4eba-8ed7-e76cbd99080a&#39;</span><span class="p">,</span> <span class="s1">&#39;2023-01-05T08:00:00&#39;</span><span class="p">,</span> <span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;2025-01-01&#39;</span><span class="p">);</span>
+<span class="n">EXECUTE</span> <span class="n">my_insert</span><span class="p">(</span><span class="s1">&#39;3782cea4-d449-48fd-a56f-cd43c4577230&#39;</span><span class="p">,</span> <span class="s1">&#39;2023-01-05T08:00:00&#39;</span><span class="p">,</span> <span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;2025-01-01&#39;</span><span class="p">);</span>
+<span class="n">EXECUTE</span> <span class="n">my_insert</span><span class="p">(</span><span class="s1">&#39;949d18e2-6fca-427a-9aac-a6803ef94b4f&#39;</span><span class="p">,</span> <span class="s1">&#39;2023-01-05T08:00:00&#39;</span><span class="p">,</span> <span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;2025-01-01&#39;</span><span class="p">);</span>
+<span class="n">EXECUTE</span> <span class="n">my_insert</span><span class="p">(</span><span class="s1">&#39;3453d9f4-e34a-4e13-b72f-da1112edbe7f&#39;</span><span class="p">,</span> <span class="s1">&#39;2023-01-05T08:00:00&#39;</span><span class="p">,</span> <span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;2025-01-01&#39;</span><span class="p">);</span>
+<span class="n">COMMIT</span><span class="p">;</span>
+
+<span class="p">;</span> <span class="n">Result</span>
+<span class="n">BEGIN</span>
+<span class="n">DELETE</span> <span class="mi">1</span>
+<span class="n">INSERT</span> <span class="mi">0</span> <span class="mi">1</span>
+<span class="n">INSERT</span> <span class="mi">0</span> <span class="mi">0</span>
+<span class="n">INSERT</span> <span class="mi">0</span> <span class="mi">0</span>
+<span class="n">INSERT</span> <span class="mi">0</span> <span class="mi">0</span>
+<span class="n">INSERT</span> <span class="mi">0</span> <span class="mi">0</span>
+<span class="n">ERROR</span><span class="p">:</span>  <span class="n">there</span> <span class="k">is</span> <span class="n">no</span> <span class="n">unique</span> <span class="ow">or</span> <span class="n">exclusion</span> <span class="n">constraint</span> <span class="n">matching</span> <span class="n">the</span> <span class="n">ON</span> <span class="n">CONFLICT</span> <span class="n">specification</span>
+<span class="n">ROLLBACK</span>
+</code></pre></div>
+
+<p>Weird! Right?! I still don't know what it has to do with number 6!<br>
+Apparently, the root cause of this problem is planning. Hence the predicate value is a parameter, the planer at some point can't be
+sure about the value and decides to fail everything. If you make the value a hard-coded one, it would work properly
+(the planner can be sure that this X will be the value and it always will hit the index):</p>
+<div class="highlight"><pre><span></span><code><span class="nt">PREPARE</span> <span class="nt">my_insert</span> <span class="o">(</span><span class="nt">uuid</span><span class="o">,</span> <span class="nt">TIMESTAMP</span><span class="o">,</span> <span class="nt">VARCHAR</span><span class="o">,</span> <span class="nt">VARCHAR</span><span class="o">,</span> <span class="nt">VARCHAR</span><span class="o">,</span> <span class="nt">NUMERIC</span><span class="o">,</span> <span class="nt">BIGINT</span><span class="o">)</span> <span class="nt">AS</span>
+
+<span class="nt">INSERT</span> <span class="nt">INTO</span> <span class="nt">balance</span>
+<span class="o">(</span><span class="nt">id</span><span class="o">,</span> <span class="nt">time</span><span class="o">,</span> <span class="nt">entity_type</span><span class="o">,</span> <span class="nt">entity_id</span><span class="o">,</span> <span class="nt">currency</span><span class="o">,</span> <span class="nt">volume</span><span class="o">,</span> <span class="nt">version</span><span class="o">)</span>
+<span class="nt">VALUES</span>
+<span class="o">($</span><span class="nt">1</span><span class="p">::</span><span class="nd">uuid</span><span class="o">,</span> <span class="o">$</span><span class="nt">2</span><span class="p">::</span><span class="nd">TIMESTAMP</span><span class="o">,</span> <span class="o">$</span><span class="nt">3</span><span class="p">::</span><span class="nd">VARCHAR</span><span class="o">,</span> <span class="o">$</span><span class="nt">4</span><span class="p">::</span><span class="nd">VARCHAR</span><span class="o">,</span> <span class="o">$</span><span class="nt">5</span><span class="p">::</span><span class="nd">VARCHAR</span><span class="o">,</span> <span class="o">$</span><span class="nt">6</span><span class="p">::</span><span class="nd">NUMERIC</span><span class="o">,</span> <span class="o">$</span><span class="nt">7</span><span class="p">::</span><span class="nd">BIGINT</span><span class="o">)</span>
+<span class="nt">ON</span> <span class="nt">CONFLICT</span> <span class="o">(</span><span class="nt">entity_type</span><span class="o">,</span> <span class="nt">entity_id</span><span class="o">,</span> <span class="nt">time</span><span class="o">,</span> <span class="nt">currency</span><span class="o">)</span>
+<span class="nt">WHERE</span> <span class="nt">TIME</span> <span class="o">&gt;</span> <span class="s1">&#39;2025-01-01&#39;</span><span class="p">::</span><span class="nd">TIMESTAMP</span>
+<span class="nt">DO</span> <span class="nt">UPDATE</span> <span class="nt">SET</span> <span class="nt">volume</span> <span class="o">=</span> <span class="nt">excluded</span><span class="p">.</span><span class="nc">volume</span><span class="o">,</span> <span class="nt">version</span> <span class="o">=</span> <span class="nt">excluded</span><span class="p">.</span><span class="nc">version</span>
+<span class="nt">WHERE</span> <span class="nt">balance</span><span class="p">.</span><span class="nc">version</span> <span class="o">&lt;</span> <span class="nt">excluded</span><span class="p">.</span><span class="nc">version</span><span class="o">;</span>
+</code></pre></div>
+
+<p>Then:  </p>
+<div class="highlight"><pre><span></span><code><span class="nt">BEGIN</span><span class="o">;</span>
+<span class="nt">DELETE</span> <span class="nt">FROM</span> <span class="nt">balance</span><span class="o">;</span>
+<span class="nt">EXECUTE</span> <span class="nt">my_insert</span><span class="o">(</span><span class="s1">&#39;e063a2aa-53c3-4546-8f90-3955d4b4c23d&#39;</span><span class="o">,</span> <span class="s1">&#39;2023-01-05T08:00:00&#39;</span><span class="o">,</span> <span class="s1">&#39;A&#39;</span><span class="o">,</span> <span class="s1">&#39;B&#39;</span><span class="o">,</span> <span class="s1">&#39;C&#39;</span><span class="o">,</span> <span class="nt">1</span><span class="o">,</span> <span class="nt">2</span><span class="o">);</span>
+<span class="nt">EXECUTE</span> <span class="nt">my_insert</span><span class="o">(</span><span class="s1">&#39;4f5bb87d-be77-421b-ad86-1cee28187cf6&#39;</span><span class="o">,</span> <span class="s1">&#39;2023-01-05T08:00:00&#39;</span><span class="o">,</span> <span class="s1">&#39;A&#39;</span><span class="o">,</span> <span class="s1">&#39;B&#39;</span><span class="o">,</span> <span class="s1">&#39;C&#39;</span><span class="o">,</span> <span class="nt">1</span><span class="o">,</span> <span class="nt">2</span><span class="o">);</span>
+<span class="nt">EXECUTE</span> <span class="nt">my_insert</span><span class="o">(</span><span class="s1">&#39;17a5a62e-0736-4eba-8ed7-e76cbd99080a&#39;</span><span class="o">,</span> <span class="s1">&#39;2023-01-05T08:00:00&#39;</span><span class="o">,</span> <span class="s1">&#39;A&#39;</span><span class="o">,</span> <span class="s1">&#39;B&#39;</span><span class="o">,</span> <span class="s1">&#39;C&#39;</span><span class="o">,</span> <span class="nt">1</span><span class="o">,</span> <span class="nt">2</span><span class="o">);</span>
+<span class="nt">EXECUTE</span> <span class="nt">my_insert</span><span class="o">(</span><span class="s1">&#39;3782cea4-d449-48fd-a56f-cd43c4577230&#39;</span><span class="o">,</span> <span class="s1">&#39;2023-01-05T08:00:00&#39;</span><span class="o">,</span> <span class="s1">&#39;A&#39;</span><span class="o">,</span> <span class="s1">&#39;B&#39;</span><span class="o">,</span> <span class="s1">&#39;C&#39;</span><span class="o">,</span> <span class="nt">1</span><span class="o">,</span> <span class="nt">2</span><span class="o">);</span>
+<span class="nt">EXECUTE</span> <span class="nt">my_insert</span><span class="o">(</span><span class="s1">&#39;949d18e2-6fca-427a-9aac-a6803ef94b4f&#39;</span><span class="o">,</span> <span class="s1">&#39;2023-01-05T08:00:00&#39;</span><span class="o">,</span> <span class="s1">&#39;A&#39;</span><span class="o">,</span> <span class="s1">&#39;B&#39;</span><span class="o">,</span> <span class="s1">&#39;C&#39;</span><span class="o">,</span> <span class="nt">1</span><span class="o">,</span> <span class="nt">2</span><span class="o">);</span>
+<span class="nt">EXECUTE</span> <span class="nt">my_insert</span><span class="o">(</span><span class="s1">&#39;3453d9f4-e34a-4e13-b72f-da1112edbe7f&#39;</span><span class="o">,</span> <span class="s1">&#39;2023-01-05T08:00:00&#39;</span><span class="o">,</span> <span class="s1">&#39;A&#39;</span><span class="o">,</span> <span class="s1">&#39;B&#39;</span><span class="o">,</span> <span class="s1">&#39;C&#39;</span><span class="o">,</span> <span class="nt">1</span><span class="o">,</span> <span class="nt">2</span><span class="o">);</span>
+<span class="nt">COMMIT</span><span class="o">;</span>
+
+<span class="o">;</span> <span class="nt">Result</span>
+<span class="nt">BEGIN</span>
+<span class="nt">DELETE</span> <span class="nt">1</span>
+<span class="nt">INSERT</span> <span class="nt">0</span> <span class="nt">1</span>
+<span class="nt">INSERT</span> <span class="nt">0</span> <span class="nt">0</span>
+<span class="nt">INSERT</span> <span class="nt">0</span> <span class="nt">0</span>
+<span class="nt">INSERT</span> <span class="nt">0</span> <span class="nt">0</span>
+<span class="nt">INSERT</span> <span class="nt">0</span> <span class="nt">0</span>
+<span class="nt">INSERT</span> <span class="nt">0</span> <span class="nt">0</span>
+<span class="nt">COMMIT</span>
+</code></pre></div>
+
+<p>To be honest I still don't understand why this is a "valid behavior" and why isn't considered a bug but
+if you want to read more on  PostgreSQL's mailing list, this is the thread:
+<a href="https://www.postgresql.org/message-id/flat/17445-fb74db6348391e85%40postgresql.org">Thread</a></p>
+  </div>
+  <div class="tag-cloud">
+    <p>
+    </p>
+  </div>
+
+
+
+
+
+</article>
+
+    <footer>
+<p>
+  &copy;  2021 - This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>
+</p>
+<p>    Powered by <a href="http://getpelican.com" target="_blank">Pelican</a> - <a href="https://github.com/alexandrevicenzi/flex" target="_blank">Flex</a> theme by <a href="http://alexandrevicenzi.com" target="_blank">Alexandre Vicenzi</a>
+</p><p>
+  <a rel="license"
+     href="http://creativecommons.org/licenses/by-sa/4.0/"
+     target="_blank">
+    <img alt="Creative Commons License"
+         title="Creative Commons License"
+         style="border-width:0"
+           src="https://i.creativecommons.org/l/by-sa/4.0/80x15.png"
+         width="80"
+         height="15"/>
+  </a>
+</p>    </footer>
+  </main>
+
+
+
+
+<script type="application/ld+json">
+{
+  "@context" : "http://schema.org",
+  "@type" : "Blog",
+  "name": " Yaser Amiri - Personal Blog ",
+  "url" : ".",
+  "image": "/images/profile.png",
+  "description": "Yaser Amiri's Thoughts and Writings"
+}
+</script>
+
+</body>
+</html>
