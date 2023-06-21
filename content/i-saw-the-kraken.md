@@ -1,6 +1,6 @@
 Title: I saw a kraken
 Date: 2023-06-13
-Category: tech, database, postgresql
+Category: database
 
 PostgreSQL has been one of the first DBMSs I've used, and it has been a reliable choice for me over the past 7 years.
 For me, it always has been the statue of "Reliability". I have never personally encountered any bugs in PostgreSQL, this fact

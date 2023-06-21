@@ -1,6 +1,6 @@
 Title: Tenth year of using Linux
 Date: 2021-12-10
-Category: tech
+Category: linux
 
 In 2012 I met and installed Linux for the first time. I chose openSUSE 12.1 just because that green chameleon was so cool :))  
 Yes, it's not logical to choose your OS based on a logo but I was 16 and I didn't know anything about computers and what's inside them.

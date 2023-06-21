@@ -1,0 +1,222 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="" />
+
+  <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro|Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+
+    <link rel="stylesheet" type="text/css" href="https://yaser.pages.dev/theme/stylesheet/style.min.css">
+
+  <link rel="stylesheet" type="text/css" href="https://yaser.pages.dev/theme/pygments/github.min.css">
+  <link rel="stylesheet" type="text/css" href="https://yaser.pages.dev/theme/font-awesome/css/font-awesome.min.css">
+
+    <link href="https://yaser.pages.dev/styles/custom.css" rel="stylesheet">
+
+    <link href="https://yaser.pages.dev/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Yaser Amiri - Personal Blog Atom">
+
+
+    <link rel="shortcut icon" href="/images/profile.png" type="image/x-icon">
+    <link rel="icon" href="/images/profile.png" type="image/x-icon">
+
+
+    <!-- Chrome, Firefox OS and Opera -->
+    <meta name="theme-color" content="#333">
+    <!-- Windows Phone -->
+    <meta name="msapplication-navbutton-color" content="#333">
+    <!-- iOS Safari -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- Microsoft EDGE -->
+    <meta name="msapplication-TileColor" content="#333">
+
+<meta name="author" content="Yaser Amiri" />
+<meta name="description" content="Recently I was playing with some data using my beloved Python, and during transforming the records I found out that CPython can optimize the memory usage of created objects of the same class in a very interesting way. I think most Python developers are familiar with __slots__, we mostly use …" />
+<meta name="keywords" content="">
+
+<meta property="og:site_name" content="Yaser Amiri - Personal Blog"/>
+<meta property="og:title" content="Respect __init__ to reduce your memory usage"/>
+<meta property="og:description" content="Recently I was playing with some data using my beloved Python, and during transforming the records I found out that CPython can optimize the memory usage of created objects of the same class in a very interesting way. I think most Python developers are familiar with __slots__, we mostly use …"/>
+<meta property="og:locale" content="en_US"/>
+<meta property="og:url" content="https://yaser.pages.dev/respect-__init__-to-reduce-your-memory-usage.html"/>
+<meta property="og:type" content="article"/>
+<meta property="article:published_time" content="2023-06-20 00:00:00+04:30"/>
+<meta property="article:modified_time" content=""/>
+<meta property="article:author" content="https://yaser.pages.dev/author/yaser-amiri.html">
+<meta property="article:section" content="python"/>
+<meta property="og:image" content="/images/profile.png">
+
+  <title>Yaser Amiri - Personal Blog &ndash; Respect __init__ to reduce your memory usage</title>
+
+</head>
+<body>
+  <aside>
+    <div>
+      <a href="https://yaser.pages.dev">
+        <img src="/images/profile.png" alt="Yaser Amiri" title="Yaser Amiri">
+      </a>
+      <h1><a href="https://yaser.pages.dev">Yaser Amiri</a></h1>
+
+<p>Software Engineer</p>
+      <nav>
+        <ul class="list">
+          <li><a href="https://yaser.pages.dev/pages/about-me.html#about-me">About Me</a></li>
+
+        </ul>
+      </nav>
+
+      <ul class="social">
+        <li><a class="sc-github" href="https://github.com/Yaser-Amiri" target="_blank"><i class="fa fa-github"></i></a></li>
+        <li><a class="sc-linkedin" href="https://www.linkedin.com/in/yaser-amiri" target="_blank"><i class="fa fa-linkedin"></i></a></li>
+        <li><a class="sc-twitter" href="https://twitter.com/Yaser-Amiri" target="_blank"><i class="fa fa-twitter"></i></a></li>
+      </ul>
+    </div>
+
+
+  </aside>
+  <main>
+
+
+<article class="single">
+  <header>
+      
+    <h1 id="respect-__init__-to-reduce-your-memory-usage">Respect __init__ to reduce your memory usage</h1>
+    <p>
+          Posted on Tue 20 June 2023 in <a href="https://yaser.pages.dev/category/python.html">python</a>
+
+
+    </p>
+  </header>
+
+
+  <div>
+    <p>Recently I was playing with some data using my beloved Python, and during transforming the records I found out
+that CPython can optimize the memory usage of created objects of the same class in a very interesting way.  </p>
+<p>I think most Python developers are familiar with <code>__slots__</code>, we mostly use it to reduce the memory usage of objects,
+(it also can decrease attribute access time a bit) but it's full of caveats, especially when it gets mixed up with inheritance.
+One limitation that <code>__slots__</code> brings to the table is the fact that you won't be able to add more attributes to the object
+dynamically. Yes, adding instance attributes in that way is not neat and certainly can lead to weird bugs, although it can't be
+that harmful if you're just trying to explore or play with some data in your Python shell, it's actually very nice!
+Thereby I don't use <code>__slots__</code> in this kind of scenario and just write a simple class.</p>
+<p>But does it mean that there is no other thing that we can do about object memory usage?<br>
+No!<br>
+<img alt="There is another" src="https://yaser.pages.dev/images/there-is-another.jpg" title="There is another"></p>
+<p><strong>CPython (since 3.3) can share keys of <code>__dict__</code></strong> (<a href="https://peps.python.org/pep-0412/">PEP 412 – Key-Sharing Dictionary</a>)<br>
+All the objects which we make of regular classes have a property named <code>__dict__</code>, it's a dictionary that basically holds
+instance's attributes within, although there are many exceptions, using <code>__slots__</code> is one of them (It's possible to use them both
+together but that would make more trouble than it fixes), using other custom descriptors can also bypass it.
+Anyway, you can imagine if we create a million instances of a class with 10 attributes, we are actually making a million dictionaries,
+it means 10 million keys are going to live in the memory separately, right?! Well, this is where PEP 412 comes to help.  </p>
+<p>PEP 412 basically says CPython can optimize these dicts and use the same keys and hashes as long as you don't change the keys.
+It will help you if you keep your keys (instance attributes) constant and don't add more attributes after initialization.</p>
+<p>Let's do an experiment and see how it works.  </p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">pympler.asizeof</span> <span class="kn">import</span> <span class="n">asizeof</span>
+
+<span class="k">class</span> <span class="nc">Foo</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">g</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aaaaa</span> <span class="o">=</span> <span class="n">a</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bbbbb</span> <span class="o">=</span> <span class="n">b</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ccccc</span> <span class="o">=</span> <span class="n">c</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ddddd</span> <span class="o">=</span> <span class="n">d</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eeeee</span> <span class="o">=</span> <span class="n">e</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fffff</span> <span class="o">=</span> <span class="n">f</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ggggg</span> <span class="o">=</span> <span class="n">g</span>
+
+
+<span class="n">f1</span> <span class="o">=</span> <span class="n">Foo</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">f1</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="mi">9</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10000</span><span class="p">):</span>
+    <span class="n">obj</span> <span class="o">=</span> <span class="n">Foo</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+    <span class="n">obj</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Size of the list:&quot;</span><span class="p">,</span> <span class="n">asizeof</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">,</span> <span class="s2">&quot;KB&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p>We have a simple class named <code>Foo</code> we create an instance named <code>f1</code> and add a new attribute <code>y</code>, then we make 10000 other instances and add
+a new attribute named <code>z</code> dynamically. Result of the code: <code>Size of the list: 4485.896 KB</code>  </p>
+<p>Now let's make it static and create all the attributes we need at the <code>__init__</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">pympler.asizeof</span> <span class="kn">import</span> <span class="n">asizeof</span>
+
+<span class="k">class</span> <span class="nc">Foo</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">g</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aaaaa</span> <span class="o">=</span> <span class="n">a</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bbbbb</span> <span class="o">=</span> <span class="n">b</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ccccc</span> <span class="o">=</span> <span class="n">c</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ddddd</span> <span class="o">=</span> <span class="n">d</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eeeee</span> <span class="o">=</span> <span class="n">e</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fffff</span> <span class="o">=</span> <span class="n">f</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ggggg</span> <span class="o">=</span> <span class="n">g</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="n">f1</span> <span class="o">=</span> <span class="n">Foo</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">f1</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="mi">9</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10000</span><span class="p">):</span>
+    <span class="n">obj</span> <span class="o">=</span> <span class="n">Foo</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+    <span class="n">obj</span><span class="o">.</span><span class="n">z</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Size of the list:&quot;</span><span class="p">,</span> <span class="n">asizeof</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">,</span> <span class="s2">&quot;KB&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Result: <code>Size of the list: 2325.56 KB</code>, almost 50% percent better! Isn't that great?! In this case, we don't add any new attributes,
+which means we let CPython use the same data(hashes and keys) for the new dictionaries. It just creates a new data structure for dict values.<br>
+I love it this way, with a simple change in my class I can load more data on memory to play with, and don't have to deal with <code>__slots__</code>.</p>
+<p><strong>Note: <strong>slots</strong> is still much more efficient.</strong></p>
+  </div>
+  <div class="tag-cloud">
+    <p>
+    </p>
+  </div>
+
+
+
+
+
+</article>
+
+    <footer>
+<p>
+  &copy;  2021 - This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>
+</p>
+<p>    Powered by <a href="http://getpelican.com" target="_blank">Pelican</a> - <a href="https://github.com/alexandrevicenzi/flex" target="_blank">Flex</a> theme by <a href="http://alexandrevicenzi.com" target="_blank">Alexandre Vicenzi</a>
+</p><p>
+  <a rel="license"
+     href="http://creativecommons.org/licenses/by-sa/4.0/"
+     target="_blank">
+    <img alt="Creative Commons License"
+         title="Creative Commons License"
+         style="border-width:0"
+           src="https://i.creativecommons.org/l/by-sa/4.0/80x15.png"
+         width="80"
+         height="15"/>
+  </a>
+</p>    </footer>
+  </main>
+
+
+
+
+<script type="application/ld+json">
+{
+  "@context" : "http://schema.org",
+  "@type" : "Blog",
+  "name": " Yaser Amiri - Personal Blog ",
+  "url" : "https://yaser.pages.dev",
+  "image": "/images/profile.png",
+  "description": "Yaser Amiri's Thoughts and Writings"
+}
+</script>
+
+</body>
+</html>

@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Yaser Amiri - Personal Blog - tech, database, postgresql</title><link href="https://yaser.pages.dev/" rel="alternate"></link><link href="https://yaser.pages.dev/feeds/tech-database-postgresql.atom.xml" rel="self"></link><id>https://yaser.pages.dev/</id><updated>2021-12-10T00:00:00+03:30</updated><subtitle>Software Engineer</subtitle><entry><title>I saw the kraken</title><link href="https://yaser.pages.dev/i-saw-the-kraken.html" rel="alternate"></link><published>2021-12-10T00:00:00+03:30</published><updated>2021-12-10T00:00:00+03:30</updated><author><name>Yaser Amiri</name></author><id>tag:yaser.pages.dev,2021-12-10:/i-saw-the-kraken.html</id><summary type="html">&lt;p&gt;PostgreSQL was one of the first DBMSs which I've used, it's been 7 years by now. For me it always has been the statue of "Reliability".
-Never encountered a bug in Postgres myself and it made me think that maybe it's impossible! Maybe you have to be one of the …&lt;/p&gt;</summary><content type="html">&lt;p&gt;PostgreSQL was one of the first DBMSs which I've used, it's been 7 years by now. For me it always has been the statue of "Reliability".
-Never encountered a bug in Postgres myself and it made me think that maybe it's impossible! Maybe you have to be one of the best sailors
-of the world to be able to see such a rare monster!  &lt;/p&gt;
-&lt;p&gt;Finally in the spring of 2022 I thought I saw a kraken, a bug (actually Postgres developer's don't call it a bug) in PostgreSQL which
-I couldn't find anything about it anywhere and was alive on the last version of Postgres. I started a thread in PostgreSQL's mailing list
-and talked to the good men of Postgres and they said that it's not bug but should be documented. I think I hasn't yet, so I decided to write
-the story, maybe it save a couple of days/hours for someone.&lt;/p&gt;
-&lt;p&gt;Let's say you have a table called &lt;code&gt;balance&lt;/code&gt;, it looks like this (I deleted primary key, etc to make things simpler):  &lt;/p&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Yaser Amiri - Personal Blog - database</title><link href="https://yaser.pages.dev/" rel="alternate"></link><link href="https://yaser.pages.dev/feeds/database.atom.xml" rel="self"></link><id>https://yaser.pages.dev/</id><updated>2023-06-13T00:00:00+04:30</updated><subtitle>Software Engineer</subtitle><entry><title>I saw a kraken</title><link href="https://yaser.pages.dev/i-saw-a-kraken.html" rel="alternate"></link><published>2023-06-13T00:00:00+04:30</published><updated>2023-06-13T00:00:00+04:30</updated><author><name>Yaser Amiri</name></author><id>tag:yaser.pages.dev,2023-06-13:/i-saw-a-kraken.html</id><summary type="html">&lt;p&gt;PostgreSQL has been one of the first DBMSs I've used, and it has been a reliable choice for me over the past 7 years.
+For me, it always has been the statue of "Reliability". I have never personally encountered any bugs in PostgreSQL, this fact
+made me think that maybe …&lt;/p&gt;</summary><content type="html">&lt;p&gt;PostgreSQL has been one of the first DBMSs I've used, and it has been a reliable choice for me over the past 7 years.
+For me, it always has been the statue of "Reliability". I have never personally encountered any bugs in PostgreSQL, this fact
+made me think that maybe it's impossible! Maybe you have to be one of the best sailors in the world to be able to see such a rare monster!  &lt;/p&gt;
+&lt;p&gt;In the spring of 2022, I found a scenario that was causing a bug in &lt;a href="https://eveince.com"&gt;Eveince Platform&lt;/a&gt; and no one in our team could find an explanation for it, I thought the Kraken has finally appeared, a bug in PostgreSQL(actually Postgres developer don't call it a bug) which
+I couldn't find anything about it anywhere and it was alive on the last version of Postgres.
+I started a thread in PostgreSQL's mailing list and talked to the good men of Postgres, they said it's not a bug however it should get documented.
+I think I haven't yet, so I decided to write the story, So here I am writing this blog post, hopefully it save a couple of days/hours for someone.&lt;/p&gt;
+&lt;p&gt;Let's say you have a table called balance, it looks like this (I deleted the primary key, etc to make things more simple):  &lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;CREATE TABLE public.balance (
     id uuid NOT NULL,
     version BIGINT DEFAULT &amp;#39;0&amp;#39;::BIGINT NOT NULL,
@@ -26,7 +27,7 @@ the story, maybe it save a couple of days/hours for someone.&lt;/p&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
 &lt;p&gt;It simply says all the records with the same [&lt;code&gt;entity_type&lt;/code&gt;, &lt;code&gt;entity_id&lt;/code&gt;, &lt;code&gt;time&lt;/code&gt;, and &lt;code&gt;currency&lt;/code&gt;] and
-their time is greater than &lt;code&gt;2021-12-30 23:59:59&lt;/code&gt; must be unique and indexed.&lt;br&gt;
+their &lt;code&gt;time&lt;/code&gt; is greater than &lt;code&gt;2021-12-30 23:59:59&lt;/code&gt; must be unique and indexed.&lt;br&gt;
 Everything is going well up to this point.&lt;/p&gt;
 &lt;p&gt;Now let's start writing to this table, a prepared statement would be in order:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="nt"&gt;PREPARE&lt;/span&gt; &lt;span class="nt"&gt;my_insert&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;uuid&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;TIMESTAMP&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;VARCHAR&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;VARCHAR&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;VARCHAR&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;NUMERIC&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;BIGINT&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;TIMESTAMP&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="nt"&gt;AS&lt;/span&gt;
@@ -41,12 +42,12 @@ Everything is going well up to this point.&lt;/p&gt;
 &lt;span class="nt"&gt;WHERE&lt;/span&gt; &lt;span class="nt"&gt;balance&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nc"&gt;version&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="nt"&gt;excluded&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="nc"&gt;version&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
-&lt;p&gt;It's an almost simple insert, it basically says if there is a records with the same [&lt;code&gt;entity_type&lt;/code&gt;, &lt;code&gt;entity_id&lt;/code&gt;, &lt;code&gt;time&lt;/code&gt;, and &lt;code&gt;currency&lt;/code&gt;]
-and its &lt;code&gt;version&lt;/code&gt; is lower than what I want to insert, it should be updated otherwise it's gonna be inserted regulary. We have to put a where clause
-after &lt;code&gt;ON CONFLICT&lt;/code&gt; to satisfy index's predicate (which was about time being at lease 2022) otherwise Postgres would raise an error to express
-it can't find an index for &lt;code&gt;ON CONFLICT&lt;/code&gt;. Value of this predicate is not strict, it only has to make the predicate "true",
-2023, 2033, 2025, all of them are OK (because they're greather than &lt;code&gt;2021-12-30 23:59:59&lt;/code&gt;)&lt;/p&gt;
-&lt;p&gt;Now let's use this prepared statement and insert 5 records with the same values, after this transaction we would have 1 record in database.&lt;/p&gt;
+&lt;p&gt;It's an almost simple insert, it basically says if there is a record with the same [&lt;code&gt;entity_type&lt;/code&gt;, &lt;code&gt;entity_id&lt;/code&gt;, &lt;code&gt;time&lt;/code&gt;, and &lt;code&gt;currency&lt;/code&gt;]
+and its &lt;code&gt;version&lt;/code&gt; is lower than what I want to insert, it should be updated otherwise it's gonna be inserted regularly. We have to put a where clause
+after &lt;code&gt;ON CONFLICT&lt;/code&gt; to satisfy the index's predicate (which was about &lt;em&gt;the time being at least 2022&lt;/em&gt;) otherwise Postgres would raise an error to
+express that it can't find an index for &lt;code&gt;ON CONFLICT&lt;/code&gt;. The value of this predicate is not strict, it only has to make the predicate "true",
+2023, 2033, 2025, all of them are OK (because they're greater than &lt;code&gt;2021-12-30 23:59:59&lt;/code&gt;)&lt;/p&gt;
+&lt;p&gt;Now let's use this prepared statement and insert 5 records with the same values, after this transaction, we would have 1 record in the database.&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="nt"&gt;BEGIN&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
 &lt;span class="nt"&gt;DELETE&lt;/span&gt; &lt;span class="nt"&gt;FROM&lt;/span&gt; &lt;span class="nt"&gt;balance&lt;/span&gt;&lt;span class="o"&gt;;&lt;/span&gt;
 &lt;span class="nt"&gt;EXECUTE&lt;/span&gt; &lt;span class="nt"&gt;my_insert&lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;e063a2aa-53c3-4546-8f90-3955d4b4c23d&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;2023-01-05T08:00:00&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;A&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;B&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;C&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;1&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;2&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;2025-01-01&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;);&lt;/span&gt;
@@ -67,8 +68,8 @@ it can't find an index for &lt;code&gt;ON CONFLICT&lt;/code&gt;. Value of this p
 &lt;span class="nt"&gt;COMMIT&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
-&lt;p&gt;It worked. No surprise. BUT if you the same with one more record (make it 6 records) it'll fail! &lt;code&gt;DEALLOCATE&lt;/code&gt; and 
-create the prepared statement again and insert this data:&lt;/p&gt;
+&lt;p&gt;It worked. No surprise. BUT if you do the same with one more record (make it 6 records) it'll fail!
+&lt;code&gt;DEALLOCATE&lt;/code&gt; and create the prepared statement again and insert this data:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="n"&gt;BEGIN&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
 &lt;span class="n"&gt;DELETE&lt;/span&gt; &lt;span class="n"&gt;FROM&lt;/span&gt; &lt;span class="n"&gt;balance&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
 &lt;span class="n"&gt;EXECUTE&lt;/span&gt; &lt;span class="n"&gt;my_insert&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;e063a2aa-53c3-4546-8f90-3955d4b4c23d&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;2023-01-05T08:00:00&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;A&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;B&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;C&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;2025-01-01&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
@@ -91,10 +92,10 @@ create the prepared statement again and insert this data:&lt;/p&gt;
 &lt;span class="n"&gt;ROLLBACK&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
-&lt;p&gt;Weired! Right?! I still don't know what it has to do with number 6!
-Apparently the root cause of this problem is planning. Hence the predicate value is a parameter, the planer at some point can't be sure
-about the value and decides to fail eveything. If you make the value a hard coded one, it would work properly 
-(planner can be sure that this X will be the value and it always will hit the index):  &lt;/p&gt;
+&lt;p&gt;Weird! Right?! I still don't know what it has to do with number 6!&lt;br&gt;
+Apparently, the root cause of this problem is planning. Hence the predicate value is a parameter, the planer at some point can't be
+sure about the value and decides to fail everything. If you make the value a hard-coded one, it would work properly
+(the planner can be sure that this X will be the value and it always will hit the index):&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="nt"&gt;PREPARE&lt;/span&gt; &lt;span class="nt"&gt;my_insert&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="nt"&gt;uuid&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;TIMESTAMP&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;VARCHAR&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;VARCHAR&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;VARCHAR&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;NUMERIC&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nt"&gt;BIGINT&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="nt"&gt;AS&lt;/span&gt;
 
 &lt;span class="nt"&gt;INSERT&lt;/span&gt; &lt;span class="nt"&gt;INTO&lt;/span&gt; &lt;span class="nt"&gt;balance&lt;/span&gt;
@@ -130,6 +131,6 @@ about the value and decides to fail eveything. If you make the value a hard code
 &lt;span class="nt"&gt;COMMIT&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
-&lt;p&gt;To be honest I still don't understand why this is a "valid behaviour" and why is't not considered a bug
-but if you want to read more PostgreSQL's maling list, this is the thread:
-&lt;a href="https://www.postgresql.org/message-id/flat/17445-fb74db6348391e85%40postgresql.org"&gt;Thread&lt;/a&gt;&lt;/p&gt;</content><category term="tech, database, postgresql"></category></entry></feed>
+&lt;p&gt;To be honest I still don't understand why this is a "valid behavior" and why isn't considered a bug but
+if you want to read more on  PostgreSQL's mailing list, this is the thread:
+&lt;a href="https://www.postgresql.org/message-id/flat/17445-fb74db6348391e85%40postgresql.org"&gt;Thread&lt;/a&gt;&lt;/p&gt;</content><category term="database"></category></entry></feed>
