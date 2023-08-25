@@ -1,5 +1,107 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Yaser Amiri - Personal Blog</title><link href="https://yaser.pages.dev/" rel="alternate"></link><link href="https://yaser.pages.dev/feeds/all.atom.xml" rel="self"></link><id>https://yaser.pages.dev/</id><updated>2023-06-20T00:00:00+04:30</updated><subtitle>Software Engineer</subtitle><entry><title>Respect __init__ to reduce your memory usage</title><link href="https://yaser.pages.dev/respect-__init__-to-reduce-your-memory-usage.html" rel="alternate"></link><published>2023-06-20T00:00:00+04:30</published><updated>2023-06-20T00:00:00+04:30</updated><author><name>Yaser Amiri</name></author><id>tag:yaser.pages.dev,2023-06-20:/respect-__init__-to-reduce-your-memory-usage.html</id><summary type="html">&lt;p&gt;Recently I was playing with some data using my beloved Python, and during transforming the records I found out
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Yaser Amiri - Personal Blog</title><link href="https://yaser.pages.dev/" rel="alternate"></link><link href="https://yaser.pages.dev/feeds/all.atom.xml" rel="self"></link><id>https://yaser.pages.dev/</id><updated>2023-08-24T00:00:00+04:30</updated><subtitle>Software Engineer</subtitle><entry><title>Python's Data Containers Comparison</title><link href="https://yaser.pages.dev/pythons-data-containers-comparison.html" rel="alternate"></link><published>2023-08-24T00:00:00+04:30</published><updated>2023-08-24T00:00:00+04:30</updated><author><name>Yaser Amiri</name></author><id>tag:yaser.pages.dev,2023-08-24:/pythons-data-containers-comparison.html</id><summary type="html">&lt;p&gt;With Python 3.7 data classes have been introduced. They are simple classes that can hold some data as attributes,
+support type hints in a clean way, and provide a default constructor for developers. Good news! they can be immutable (frozen).
+I know the &lt;code&gt;dataclasses&lt;/code&gt; lib provides much more features …&lt;/p&gt;</summary><content type="html">&lt;p&gt;With Python 3.7 data classes have been introduced. They are simple classes that can hold some data as attributes,
+support type hints in a clean way, and provide a default constructor for developers. Good news! they can be immutable (frozen).
+I know the &lt;code&gt;dataclasses&lt;/code&gt; lib provides much more features but what I described below, covers most of my use cases and is good enough.
+Now I want to compare it with the older options and methods that we can use to hold data and access
+them by attribute like named tuples or even better NamedTuple from &lt;code&gt;typing&lt;/code&gt; and
+of course a simple Python class with an &lt;code&gt;__init__&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;Note: I use CPython 3.10.11&lt;/em&gt;&lt;/p&gt;
+&lt;h3&gt;What I need&lt;/h3&gt;
+&lt;p&gt;This is what I want in terms of interface:  &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;yaser&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Person&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;Yaser&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;age&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;26&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="nb"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;yaser&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;age&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="mi"&gt;26&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;Also I need it to be compatible with mypy.&lt;/strong&gt;&lt;/p&gt;
+&lt;h3&gt;Class Implementations&lt;/h3&gt;
+&lt;p&gt;I'll go for these:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Simple Python classes with &lt;code&gt;__init__&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;Simple Python classes in combination with slots&lt;/li&gt;
+&lt;li&gt;Named tuples (from &lt;code&gt;typing&lt;/code&gt; lib)&lt;/li&gt;
+&lt;li&gt;Data classes (from &lt;code&gt;dataclasses&lt;/code&gt; lib)&lt;/li&gt;
+&lt;li&gt;Frozen data classes (We like immutability after all!)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;typing&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;NamedTuple&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;dataclasses&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;dataclass&lt;/span&gt;
+
+
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;NamedTuplePerson&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;NamedTuple&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;
+    &lt;span class="n"&gt;age&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;int&lt;/span&gt;
+
+
+&lt;span class="nd"&gt;@dataclass&lt;/span&gt;
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;DataClassPerson&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;
+    &lt;span class="n"&gt;age&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;int&lt;/span&gt;
+
+
+&lt;span class="nd"&gt;@dataclass&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;frozen&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="kc"&gt;True&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;FrozenDataClassPerson&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;
+    &lt;span class="n"&gt;age&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;int&lt;/span&gt;
+
+
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;RawClassPerson&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;age&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;int&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kc"&gt;None&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;age&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;age&lt;/span&gt;
+
+
+&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;SlotClassPerson&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="vm"&gt;__slots__&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;name&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;age&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;age&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="nb"&gt;int&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&amp;gt;&lt;/span&gt; &lt;span class="kc"&gt;None&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;name&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;age&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;age&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Now all of these classes can be used for my use case, let's see how they're doing!&lt;/p&gt;
+&lt;h3&gt;Construction&lt;/h3&gt;
+&lt;p&gt;Let's see how long it takes to instantiate these classes, this is the function that I'll run by &lt;code&gt;timeit&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;age&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;a&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+
+&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;test_construction&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;cls&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;size&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;1000&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;collection&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="kc"&gt;None&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;size&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="nb"&gt;range&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;size&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="n"&gt;collection&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;cls&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;age&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;age&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;collection&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Yes, I'm not just measuring the construction time, but I want to be sure about keeping multiple instances in the memory and their consequences.
+And here's the result:  &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;NamedTuplePerson      =&amp;gt; 5.113
+DataClassPerson       =&amp;gt; 5.347
+FrozenDataClassPerson =&amp;gt; 7.49
+RawClassPerson        =&amp;gt; 5.319
+SlotClassPerson       =&amp;gt; 4.514
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h3&gt;Memory usage&lt;/h3&gt;
+&lt;p&gt;Now I'm gonna create a list of 100,000 instances and measure its size by &lt;code&gt;pympler.asizeof&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;test_size&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;cls&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="c1"&gt;# used test_construction from the previous test&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="nb"&gt;int&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;asizeof&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;test_construction&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;cls&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;size&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;100000&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="o"&gt;/&lt;/span&gt; &lt;span class="mi"&gt;1000&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;The result:  &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;NamedTuplePerson      =&amp;gt; 6400 KB
+DataClassPerson       =&amp;gt; 16000 KB
+FrozenDataClassPerson =&amp;gt; 16000 KB
+RawClassPerson        =&amp;gt; 16000 KB
+SlotClassPerson       =&amp;gt; 5600 KB
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h3&gt;Conclusion&lt;/h3&gt;
+&lt;p&gt;Well, classes that use slots are very efficient in instantiation time and RAM usage, but we know they are full of gotchas, and personally
+I don't like to write my attributes as strings in &lt;code&gt;__slots__&lt;/code&gt;.&lt;br&gt;
+The second best option is using name tuple, which is close to slots and good enough!&lt;br&gt;
+The other ones are the same in memory usage and slower but instantiation of frozen data classes is considerably slower!&lt;/p&gt;
+&lt;p&gt;Good luck.&lt;/p&gt;</content><category term="python"></category></entry><entry><title>Respect __init__ to reduce your memory usage</title><link href="https://yaser.pages.dev/respect-__init__-to-reduce-your-memory-usage.html" rel="alternate"></link><published>2023-06-20T00:00:00+04:30</published><updated>2023-06-20T00:00:00+04:30</updated><author><name>Yaser Amiri</name></author><id>tag:yaser.pages.dev,2023-06-20:/respect-__init__-to-reduce-your-memory-usage.html</id><summary type="html">&lt;p&gt;Recently I was playing with some data using my beloved Python, and during transforming the records I found out
 that CPython can optimize the memory usage of created objects of the same class in a very interesting way.  &lt;/p&gt;
 &lt;p&gt;I think most Python developers are familiar with &lt;code&gt;__slots__&lt;/code&gt;, we mostly use …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Recently I was playing with some data using my beloved Python, and during transforming the records I found out
 that CPython can optimize the memory usage of created objects of the same class in a very interesting way.  &lt;/p&gt;

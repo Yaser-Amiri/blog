@@ -1,0 +1,244 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="" />
+
+  <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro|Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+
+    <link rel="stylesheet" type="text/css" href="https://yaser.pages.dev/theme/stylesheet/style.min.css">
+
+  <link rel="stylesheet" type="text/css" href="https://yaser.pages.dev/theme/pygments/github.min.css">
+  <link rel="stylesheet" type="text/css" href="https://yaser.pages.dev/theme/font-awesome/css/font-awesome.min.css">
+
+    <link href="https://yaser.pages.dev/styles/custom.css" rel="stylesheet">
+
+    <link href="https://yaser.pages.dev/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Yaser Amiri - Personal Blog Atom">
+
+
+    <link rel="shortcut icon" href="/images/profile.png" type="image/x-icon">
+    <link rel="icon" href="/images/profile.png" type="image/x-icon">
+
+
+    <!-- Chrome, Firefox OS and Opera -->
+    <meta name="theme-color" content="#333">
+    <!-- Windows Phone -->
+    <meta name="msapplication-navbutton-color" content="#333">
+    <!-- iOS Safari -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- Microsoft EDGE -->
+    <meta name="msapplication-TileColor" content="#333">
+
+<meta name="author" content="Yaser Amiri" />
+<meta name="description" content="With Python 3.7 data classes have been introduced. They are simple classes that can hold some data as attributes, support type hints in a clean way, and provide a default constructor for developers. Good news! they can be immutable (frozen). I know the dataclasses lib provides much more features …" />
+<meta name="keywords" content="">
+
+<meta property="og:site_name" content="Yaser Amiri - Personal Blog"/>
+<meta property="og:title" content="Python&#39;s Data Containers Comparison"/>
+<meta property="og:description" content="With Python 3.7 data classes have been introduced. They are simple classes that can hold some data as attributes, support type hints in a clean way, and provide a default constructor for developers. Good news! they can be immutable (frozen). I know the dataclasses lib provides much more features …"/>
+<meta property="og:locale" content="en_US"/>
+<meta property="og:url" content="https://yaser.pages.dev/pythons-data-containers-comparison.html"/>
+<meta property="og:type" content="article"/>
+<meta property="article:published_time" content="2023-08-24 00:00:00+04:30"/>
+<meta property="article:modified_time" content=""/>
+<meta property="article:author" content="https://yaser.pages.dev/author/yaser-amiri.html">
+<meta property="article:section" content="python"/>
+<meta property="og:image" content="/images/profile.png">
+
+  <title>Yaser Amiri - Personal Blog &ndash; Python&#39;s Data Containers Comparison</title>
+
+</head>
+<body>
+  <aside>
+    <div>
+      <a href="https://yaser.pages.dev">
+        <img src="/images/profile.png" alt="Yaser Amiri" title="Yaser Amiri">
+      </a>
+      <h1><a href="https://yaser.pages.dev">Yaser Amiri</a></h1>
+
+<p>Software Engineer</p>
+      <nav>
+        <ul class="list">
+          <li><a href="https://yaser.pages.dev/pages/about-me.html#about-me">About Me</a></li>
+
+        </ul>
+      </nav>
+
+      <ul class="social">
+        <li><a class="sc-github" href="https://github.com/Yaser-Amiri" target="_blank"><i class="fa fa-github"></i></a></li>
+        <li><a class="sc-linkedin" href="https://www.linkedin.com/in/yaser-amiri" target="_blank"><i class="fa fa-linkedin"></i></a></li>
+        <li><a class="sc-twitter" href="https://twitter.com/Yaser-Amiri" target="_blank"><i class="fa fa-twitter"></i></a></li>
+      </ul>
+    </div>
+
+
+  </aside>
+  <main>
+
+
+<article class="single">
+  <header>
+      
+    <h1 id="pythons-data-containers-comparison">Python's Data Containers Comparison</h1>
+    <p>
+          Posted on Thu 24 August 2023 in <a href="https://yaser.pages.dev/category/python.html">python</a>
+
+
+    </p>
+  </header>
+
+
+  <div>
+    <p>With Python 3.7 data classes have been introduced. They are simple classes that can hold some data as attributes,
+support type hints in a clean way, and provide a default constructor for developers. Good news! they can be immutable (frozen).
+I know the <code>dataclasses</code> lib provides much more features but what I described below, covers most of my use cases and is good enough.
+Now I want to compare it with the older options and methods that we can use to hold data and access
+them by attribute like named tuples or even better NamedTuple from <code>typing</code> and
+of course a simple Python class with an <code>__init__</code>.</p>
+<p><em>Note: I use CPython 3.10.11</em></p>
+<h3>What I need</h3>
+<p>This is what I want in terms of interface:  </p>
+<div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="n">yaser</span> <span class="o">=</span> <span class="n">Person</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Yaser&quot;</span><span class="p">,</span> <span class="n">age</span><span class="o">=</span><span class="mi">26</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="nb">print</span><span class="p">(</span><span class="n">yaser</span><span class="o">.</span><span class="n">age</span><span class="p">)</span>
+<span class="mi">26</span>
+</code></pre></div>
+
+<p><strong>Also I need it to be compatible with mypy.</strong></p>
+<h3>Class Implementations</h3>
+<p>I'll go for these:</p>
+<ul>
+<li>Simple Python classes with <code>__init__</code></li>
+<li>Simple Python classes in combination with slots</li>
+<li>Named tuples (from <code>typing</code> lib)</li>
+<li>Data classes (from <code>dataclasses</code> lib)</li>
+<li>Frozen data classes (We like immutability after all!)</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">NamedTuple</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+
+
+<span class="k">class</span> <span class="nc">NamedTuplePerson</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">age</span><span class="p">:</span> <span class="nb">int</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">DataClassPerson</span><span class="p">:</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">age</span><span class="p">:</span> <span class="nb">int</span>
+
+
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">FrozenDataClassPerson</span><span class="p">:</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">age</span><span class="p">:</span> <span class="nb">int</span>
+
+
+<span class="k">class</span> <span class="nc">RawClassPerson</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">age</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">age</span> <span class="o">=</span> <span class="n">age</span>
+
+
+<span class="k">class</span> <span class="nc">SlotClassPerson</span><span class="p">:</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;age&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">age</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">age</span> <span class="o">=</span> <span class="n">age</span>
+</code></pre></div>
+
+<p>Now all of these classes can be used for my use case, let's see how they're doing!</p>
+<h3>Construction</h3>
+<p>Let's see how long it takes to instantiate these classes, this is the function that I'll run by <code>timeit</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="n">name</span><span class="p">,</span> <span class="n">age</span> <span class="o">=</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="mi">1</span>
+
+<span class="k">def</span> <span class="nf">test_construction</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">size</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">):</span>
+    <span class="n">collection</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">size</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">size</span><span class="p">):</span>
+        <span class="n">collection</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">age</span><span class="o">=</span><span class="n">age</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">collection</span>
+</code></pre></div>
+
+<p>Yes, I'm not just measuring the construction time, but I want to be sure about keeping multiple instances in the memory and their consequences.
+And here's the result:  </p>
+<div class="highlight"><pre><span></span><code>NamedTuplePerson      =&gt; 5.113
+DataClassPerson       =&gt; 5.347
+FrozenDataClassPerson =&gt; 7.49
+RawClassPerson        =&gt; 5.319
+SlotClassPerson       =&gt; 4.514
+</code></pre></div>
+
+<h3>Memory usage</h3>
+<p>Now I'm gonna create a list of 100,000 instances and measure its size by <code>pympler.asizeof</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">test_size</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+    <span class="c1"># used test_construction from the previous test</span>
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">asizeof</span><span class="p">(</span><span class="n">test_construction</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">100000</span><span class="p">))</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">)</span>
+</code></pre></div>
+
+<p>The result:  </p>
+<div class="highlight"><pre><span></span><code>NamedTuplePerson      =&gt; 6400 KB
+DataClassPerson       =&gt; 16000 KB
+FrozenDataClassPerson =&gt; 16000 KB
+RawClassPerson        =&gt; 16000 KB
+SlotClassPerson       =&gt; 5600 KB
+</code></pre></div>
+
+<h3>Conclusion</h3>
+<p>Well, classes that use slots are very efficient in instantiation time and RAM usage, but we know they are full of gotchas, and personally
+I don't like to write my attributes as strings in <code>__slots__</code>.<br>
+The second best option is using name tuple, which is close to slots and good enough!<br>
+The other ones are the same in memory usage and slower but instantiation of frozen data classes is considerably slower!</p>
+<p>Good luck.</p>
+  </div>
+  <div class="tag-cloud">
+    <p>
+    </p>
+  </div>
+
+
+
+
+
+</article>
+
+    <footer>
+<p>
+  &copy;  2021 - This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>
+</p>
+<p>    Powered by <a href="http://getpelican.com" target="_blank">Pelican</a> - <a href="https://github.com/alexandrevicenzi/flex" target="_blank">Flex</a> theme by <a href="http://alexandrevicenzi.com" target="_blank">Alexandre Vicenzi</a>
+</p><p>
+  <a rel="license"
+     href="http://creativecommons.org/licenses/by-sa/4.0/"
+     target="_blank">
+    <img alt="Creative Commons License"
+         title="Creative Commons License"
+         style="border-width:0"
+           src="https://i.creativecommons.org/l/by-sa/4.0/80x15.png"
+         width="80"
+         height="15"/>
+  </a>
+</p>    </footer>
+  </main>
+
+
+
+
+<script type="application/ld+json">
+{
+  "@context" : "http://schema.org",
+  "@type" : "Blog",
+  "name": " Yaser Amiri - Personal Blog ",
+  "url" : "https://yaser.pages.dev",
+  "image": "/images/profile.png",
+  "description": "Yaser Amiri's Thoughts and Writings"
+}
+</script>
+
+</body>
+</html>
