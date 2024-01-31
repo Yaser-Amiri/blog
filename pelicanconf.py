@@ -14,7 +14,8 @@ TIMEZONE = "Asia/Tehran"
 DEFAULT_LANG = "en"
 
 # Feed generation is usually not desired when developing
-FEED_ATOM = 'feeds/atom.xml'
+FEED_ATOM = 'atom.xml'
+FEED_RSS = 'rss.xml'
 CATEGORY_FEED_ATOM = None
 TRANSLATION_FEED_ATOM = None
 AUTHOR_FEED_ATOM = None
