@@ -28,7 +28,7 @@ LINKS = tuple()
 SOCIAL = (
     ("github", "https://github.com/Yaser-Amiri"),
     ("linkedin", "https://www.linkedin.com/in/yaser-amiri"),
-    ("twitter", "https://twitter.com/Yaser-Amiri"),
+    ("rss", "./atom.xml"),
 )
 
 DEFAULT_PAGINATION = 10
